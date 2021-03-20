@@ -9,5 +9,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="mysql-connector-java-8.0.22" level="project" />
     <orderEntry type="library" name="jcalendar-1.4" level="project" />
+    <orderEntry type="library" name="httpclient-4.3.6" level="project" />
+    <orderEntry type="library" name="json-20210307" level="project" />
   </component>
 </module>

@@ -2,11 +2,22 @@ package com.Swing;
 
 import Helper.*;
 import com.mysql.cj.conf.ConnectionUrlParser;
+import netscape.javascript.JSObject;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONObject;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
@@ -25,8 +36,10 @@ public class Test extends JFrame {
     private static final String groupMembers= "SELECT COUNT(*) FROM meeting_person WHERE MeetingID = ?";
     private static final String groupDates = "SELECT * FROM datePlanner WHERE GroupID = ?";
     private static final String groupSize = "SELECT COUNT(DISTINCT PersonID, MeetingID) FROM meeting_person WHERE MeetingID = ?;";
-    private static final String docuMenu = "https://api.documenu.com/v2/restaurants/search/geo?";
-
+    private static final String docuMenu = "https://api.documenu.com/v2/restaurants/search/geo?lat=40.688072&lon=-73.997385&distance=99999&key=df1082ac3bfa0e339773ec134a339aef&cuisine=Italian";
+    private static final String cuisineName = "SELECT name FROM cuisine WHERE ID = ?;";
+    private static final String longitude = "SELECT longitude from Meeting WHERE ID = ?;";
+    private static final String latitude = "SELECT latitude from Meeting WHERE ID = ?;";
 
     private int PersonID = 0;
 
@@ -74,6 +87,7 @@ public class Test extends JFrame {
     public Test(){
         //System.out.println(calculateCuisines(3));
         System.out.println(calculateDates(4));
+        getRestaurant();
 
 
         listGroups.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -302,12 +316,80 @@ public class Test extends JFrame {
 
     }
 
+    //HashMap<Integer,Integer> cuisines, String longitude, String latitude
     Restaurant getRestaurant (HashMap<Integer,Integer> cuisines, String longitude, String latitude){
-        HttpGet httpGet = new HttpGet(request + pageCounter);
-        httpGet.addHeader("Authorization", "Bearer "+ TOKEN);
+        //extract cuisines:
+        boolean firstFlag = true;
+        String cuisineString = "";
+        try {
+            for (Map.Entry<Integer, Integer> entry : cuisines.entrySet()) {
+                int currentID = entry.getKey();
+                int currentCounter = entry.getValue();
+                PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(cuisineName);
+                preparedStatement.setInt(1, currentID);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                String name = resultSet.getString(1);
+                if (firstFlag){
+                    cuisineString = name;
+                } else {
+                    cuisineString +="," + name;
+                }
+            }
+        }catch (SQLException a){
+            a.printStackTrace();
+        }
 
-        CloseableHttpResponse response = httpClient.execute(httpGet);
-        docuMenu;
+
+        try {
+            URL url = new URL(docuMenu);
+
+
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuffer content = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
+            }
+            in.close();
+            //System.out.println(content);
+            JSONObject obj = new JSONObject(content.toString());
+            System.out.println(obj.getJSONArray("data").get(0));
+            JSONObject t1 = new JSONObject(obj.getJSONArray("data").get(0).toString());
+            Restaurant restaurant = new Restaurant(t1.getString("restaurant_name"),t1.getJSONObject("address").getString("formatted"));
+            return restaurant;
+        }catch (IOException i){
+            i.printStackTrace();
+        }
+        return null;
+    }
+
+    String getLongitude(int groupID){
+        try {
+            PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(longitude);
+            preparedStatement.setInt(1, groupID);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            return resultSet.getString(1);
+        }catch (SQLException a){
+            a.printStackTrace();
+        }
+        return null;
+    }
+
+    String getLatitude(int groupID){
+        try {
+            PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(latitude);
+            preparedStatement.setInt(1, groupID);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            return resultSet.getString(1);
+        }catch (SQLException a){
+            a.printStackTrace();
+        }
+        return null;
     }
 
     int getGroupSize(int id){
