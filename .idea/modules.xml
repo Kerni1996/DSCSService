@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/DSCS.iml" filepath="$PROJECT_DIR$/DSCS.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ONO/ONO.iml" filepath="$PROJECT_DIR$/ONO/ONO.iml" />
     </modules>
   </component>
 </project>

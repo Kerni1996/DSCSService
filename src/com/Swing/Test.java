@@ -1,16 +1,15 @@
 package com.Swing;
 
-import Helper.Appointment;
-import Helper.Cuisine;
-import Helper.DatabaseConnection;
-import Helper.Group;
+import Helper.*;
+import com.mysql.cj.conf.ConnectionUrlParser;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.*;
-import java.util.LinkedList;
+import java.sql.Date;
+import java.util.*;
 
 public class Test extends JFrame {
 
@@ -22,8 +21,11 @@ public class Test extends JFrame {
     private static final String createAppointment = "INSERT INTO datePlanner (PersonID, GroupID, date) VALUES (?,?,?)";
     private static final String userCuisineEntry = "INSERT INTO user_cuisine (userID, cuisineID) VALUES (?,?)";
     private static final String meetingsOfPerson = "SELECT * FROM Meeting m JOIN meeting_person mp ON m.ID = mp.MeetingID JOIN Persons p ON mp.PersonID = p.PersonID WHERE p.PersonID = ?";
-
-
+    private static final String cuisinePopularity = "SELECT p.PersonID, c.ID, c.name FROM Meeting m JOIN meeting_person mp ON m.id = mp.MeetingID JOIN Persons p ON p.PersonID = mp.PersonID JOIN user_cuisine uc ON uc.userID = p.PersonID JOIN cuisine c ON c.id=uc.cuisineID WHERE m.id = ?";
+    private static final String groupMembers= "SELECT COUNT(*) FROM meeting_person WHERE MeetingID = ?";
+    private static final String groupDates = "SELECT * FROM datePlanner WHERE GroupID = ?";
+    private static final String groupSize = "SELECT COUNT(DISTINCT PersonID, MeetingID) FROM meeting_person WHERE MeetingID = ?;";
+    private static final String docuMenu = "https://api.documenu.com/v2/restaurants/search/geo?";
 
 
     private int PersonID = 0;
@@ -63,12 +65,15 @@ public class Test extends JFrame {
     private JPanel RegisterPane;
     private JButton btn_register;
     private JButton openSelectedGroupButton;
+    private JPanel GroupsDetailPane;
+    private JButton BACKButton;
     private LinkedList<Helper.Appointment> appointments = new LinkedList<Appointment>();
     private DefaultListModel<String> modelDatesCreateGroupPane = new DefaultListModel<>();
     private DefaultListModel<String> modelMeetingsPerUser = new DefaultListModel<>();
 
     public Test(){
-
+        //System.out.println(calculateCuisines(3));
+        System.out.println(calculateDates(4));
 
 
         listGroups.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -239,6 +244,13 @@ public class Test extends JFrame {
                 }
             }
         });
+        openSelectedGroupButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Group group = (Group)listGroups.getSelectedValue();
+                updateGroup(group.getID());
+            }
+        });
     }
 
 
@@ -250,6 +262,7 @@ public class Test extends JFrame {
             preparedStatement.setInt(2, GroupID);
             preparedStatement.executeUpdate();
             System.out.println("Proceed with group ID: " + GroupID);
+            showGroupsPane();
         } catch (SQLException a){
             a.printStackTrace();
         }
@@ -281,6 +294,36 @@ public class Test extends JFrame {
         cLayout.show(mainPane,GROUPS_PAGE);
     }
 
+    void updateGroup(int id){
+        HashMap<Date,Integer> dates = calculateDates(id);
+        HashMap<Integer,Integer> cuisines = calculateCuisines(id);
+        int groupSize = getGroupSize(id);
+
+
+    }
+
+    Restaurant getRestaurant (HashMap<Integer,Integer> cuisines, String longitude, String latitude){
+        HttpGet httpGet = new HttpGet(request + pageCounter);
+        httpGet.addHeader("Authorization", "Bearer "+ TOKEN);
+
+        CloseableHttpResponse response = httpClient.execute(httpGet);
+        docuMenu;
+    }
+
+    int getGroupSize(int id){
+        try {
+
+            PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(groupSize);
+            preparedStatement.setInt(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            return resultSet.getInt(1);
+        }catch (SQLException a){
+            a.printStackTrace();
+        }
+        return -1;
+    }
+
     void showCreateGroupPane(){
         cLayout.show(mainPane,CREATE_GROUP_PAGE);
     }
@@ -290,14 +333,131 @@ public class Test extends JFrame {
     }
 
     public static void main(String[] args) {
-
         new Test();
+
+    }
+
+    int getNumberOfMembersInGroup(int groupID){
+        try {
+            PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(groupMembers);
+            preparedStatement.setInt(1,groupID);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return resultSet.getInt(1);
+        } catch (SQLException a){
+            a.printStackTrace();
+        }
+        //if error occurs return negative number
+        return -1;
+    }
+
+     HashMap<Integer,Integer>calculateCuisines(int groupID){
+        //create HashMap to count how many (V, counter) users prefer which cuisine (K, cuisine ID) => HashMap(cuisineID, counter)
+        HashMap<Integer, Integer > hashMap = new HashMap<Integer, Integer>();
+        try {
+            PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(cuisinePopularity);
+            preparedStatement.setInt(1,groupID);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()){
+                int cuisineID = resultSet.getInt("ID");
+
+                //if cuisine is already in hashMap increment counter by 1. otherwise create entry for cuisine with counter = 1
+                if (hashMap.containsKey(cuisineID)){
+                    int counter = hashMap.get(cuisineID)+1;
+                    hashMap.put(cuisineID,counter);
+                } else hashMap.put(cuisineID,1);
+            }
+            System.out.println(hashMap);
+        } catch (SQLException a){
+            a.printStackTrace();
+        }
+
+
+        //get highest score
+        int highestScore = -1;
+         for (Map.Entry<Integer,Integer> entry : hashMap.entrySet()){
+             int currentID = entry.getKey();
+             int currentCounter = entry.getValue();
+             if (currentCounter>highestScore){
+                 highestScore = currentCounter;
+             }
+        }
+
+         HashMap<Integer,Integer> preferredCuisine = new HashMap<>();
+         //return cuisines with highest score
+         for (Map.Entry<Integer,Integer> entry : hashMap.entrySet()) {
+             int currentCounter = entry.getValue();
+             int currentID = entry.getKey();
+             if (currentCounter == highestScore) {
+                 preferredCuisine.put(currentID, currentCounter);
+             }
+         }
+
+         return preferredCuisine;
+         //int highest = hashMap.get
+
+    }
+
+    /**
+     * calculate preferred Dates for meeting
+     * @param groupID
+     * @return HasMap with preferrred Dates as keys and number of people who voted for dates as values
+     */
+    HashMap<Date,Integer> calculateDates(int groupID){
+        try {
+
+            HashMap<Date, LinkedList> hashMap = new HashMap<>();
+            PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(groupDates);
+            preparedStatement.setInt(1,groupID);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()){
+                int personID = resultSet.getInt("PersonID");
+                Date date = resultSet.getDate("date");
+                //if Date entry exists in Map...
+                if (hashMap.containsKey(date)){
+                    //and the Person did not vote several times for the same date..
+                    if (!hashMap.get(date).contains(personID)){
+                        //add the Person to the date
+                        hashMap.get(date).add(personID);
+                    }
+                }
+                //if date is not in map yet, create entry with user
+                hashMap.put(date,new LinkedList<Integer>(Arrays.asList(personID)));
+            }
+
+            int highestMatching = -1;
+            for (Map.Entry<Date,LinkedList> entry : hashMap.entrySet()){
+                Date currentDate = entry.getKey();
+                LinkedList currentUsers = entry.getValue();
+                if (currentUsers.size()>highestMatching){
+                    highestMatching = currentUsers.size();
+                }
+            }
+
+            //create List of preferred Dates
+            HashMap<Date,Integer> preferredDates = new HashMap<>();
+            for (Map.Entry<Date,LinkedList> entry : hashMap.entrySet()) {
+                Date currentDate = entry.getKey();
+                LinkedList currentUsers = entry.getValue();
+                if (currentUsers.size()==highestMatching){
+                    preferredDates.put(currentDate,highestMatching);
+                }
+            }
+            return preferredDates;
+
+
+        }catch (SQLException a){
+            a.printStackTrace();
+        }
+
+        return null;
     }
 
     void populateCuisineList(){
 
 
-        System.out.println("testCuisimnr");
+        //System.out.println("testCuisimnr");
         DefaultListModel<Cuisine> model = new DefaultListModel<>();
         try {
             PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(getCuisinesQuery);

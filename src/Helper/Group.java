@@ -8,6 +8,10 @@ public class Group {
         this.ID = ID;
     }
 
+    public int getID() {
+        return ID;
+    }
+
     @Override
     public String toString() {
         return this.ID+"";
