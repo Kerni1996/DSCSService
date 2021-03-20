@@ -7,7 +7,7 @@
     <properties/>
     <border type="none"/>
     <children>
-      <grid id="847ad" binding="GroupsPane" layout-manager="GridLayoutManager" row-count="5" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+      <grid id="847ad" binding="GroupsPane" layout-manager="GridLayoutManager" row-count="5" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
         <margin top="0" left="0" bottom="0" right="0"/>
         <constraints>
           <card name="Card1"/>
@@ -57,6 +57,14 @@
             </constraints>
             <properties>
               <text value="Open selected Group"/>
+            </properties>
+          </component>
+          <component id="20b86" class="javax.swing.JButton" binding="logOutButton" default-binding="true">
+            <constraints>
+              <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text value="Log Out"/>
             </properties>
           </component>
         </children>
@@ -329,7 +337,7 @@
           </component>
         </children>
       </grid>
-      <grid id="25c26" binding="GroupsDetailPane" layout-manager="GridLayoutManager" row-count="5" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+      <grid id="25c26" binding="GroupsDetailPane" layout-manager="GridLayoutManager" row-count="6" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
         <margin top="0" left="0" bottom="0" right="0"/>
         <constraints>
           <card name="Card4"/>
@@ -337,7 +345,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <component id="d73e4" class="javax.swing.JLabel">
+          <component id="d73e4" class="javax.swing.JLabel" binding="detail_id">
             <constraints>
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
@@ -345,7 +353,7 @@
               <text value="ID: "/>
             </properties>
           </component>
-          <component id="bfac8" class="javax.swing.JLabel">
+          <component id="bfac8" class="javax.swing.JLabel" binding="detail_date">
             <constraints>
               <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
@@ -353,7 +361,7 @@
               <text value="Date: "/>
             </properties>
           </component>
-          <component id="cc118" class="javax.swing.JLabel">
+          <component id="cc118" class="javax.swing.JLabel" binding="detail_restaurant">
             <constraints>
               <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
@@ -361,9 +369,9 @@
               <text value="Restaurant:"/>
             </properties>
           </component>
-          <component id="5f520" class="javax.swing.JLabel">
+          <component id="5f520" class="javax.swing.JLabel" binding="detail_NumberParticipants">
             <constraints>
-              <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+              <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
               <text value="Participants:"/>
@@ -371,10 +379,67 @@
           </component>
           <component id="41f25" class="javax.swing.JButton" binding="BACKButton" default-binding="true">
             <constraints>
-              <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+              <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
               <text value="BACK"/>
+            </properties>
+          </component>
+          <component id="c9e32" class="javax.swing.JLabel" binding="detail_address">
+            <constraints>
+              <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text value="Address:"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="3475e" binding="votepane" layout-manager="GridLayoutManager" row-count="3" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <card name="Card5"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="9f8b7" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text value="Please select available dates"/>
+            </properties>
+          </component>
+          <hspacer id="aac">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </hspacer>
+          <vspacer id="39028">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </vspacer>
+          <scrollpane id="8d12c">
+            <constraints>
+              <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="bcd" class="javax.swing.JList" binding="voteDatesList">
+                <constraints/>
+                <properties/>
+              </component>
+            </children>
+          </scrollpane>
+          <component id="47bd1" class="javax.swing.JButton" binding="CONFIRMButtonVote">
+            <constraints>
+              <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text value="CONFIRM"/>
             </properties>
           </component>
         </children>

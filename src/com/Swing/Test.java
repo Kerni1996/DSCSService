@@ -35,11 +35,14 @@ public class Test extends JFrame {
     private static final String cuisinePopularity = "SELECT p.PersonID, c.ID, c.name FROM Meeting m JOIN meeting_person mp ON m.id = mp.MeetingID JOIN Persons p ON p.PersonID = mp.PersonID JOIN user_cuisine uc ON uc.userID = p.PersonID JOIN cuisine c ON c.id=uc.cuisineID WHERE m.id = ?";
     private static final String groupMembers= "SELECT COUNT(*) FROM meeting_person WHERE MeetingID = ?";
     private static final String groupDates = "SELECT * FROM datePlanner WHERE GroupID = ?";
+    private static final String distinctGroupDates = "SELECT DISTINCT date FROM datePlanner WHERE GroupID = ?";
     private static final String groupSize = "SELECT COUNT(DISTINCT PersonID, MeetingID) FROM meeting_person WHERE MeetingID = ?;";
-    private static final String docuMenu = "https://api.documenu.com/v2/restaurants/search/geo?lat=40.688072&lon=-73.997385&distance=99999&key=df1082ac3bfa0e339773ec134a339aef&cuisine=Italian";
+    private static final String docuMenu = "https://api.documenu.com/v2/restaurants/search/geo?";
     private static final String cuisineName = "SELECT name FROM cuisine WHERE ID = ?;";
     private static final String longitude = "SELECT longitude from Meeting WHERE ID = ?;";
     private static final String latitude = "SELECT latitude from Meeting WHERE ID = ?;";
+    private static final String updateMeeting="UPDATE Meeting SET restaurant =?, address=? WHERE ID = ?";
+
 
     private int PersonID = 0;
 
@@ -49,8 +52,11 @@ public class Test extends JFrame {
     public final String GROUPS_PAGE= "groups page";
     public final String CREATE_GROUP_PAGE = "create groups page";
     public final String REGISTER_PAGE = "register user page";
+    public final String GROUP_DETAIL_PAGE ="group detail page";
+    public final String VOTE_DATE_PAGE = "vote date page";
 
     private final CardLayout cLayout;
+    private int desiredGroup = 0;
     private JPanel mainPane;
     private JPanel loginPane;
     private JPanel GroupsPane;
@@ -80,14 +86,24 @@ public class Test extends JFrame {
     private JButton openSelectedGroupButton;
     private JPanel GroupsDetailPane;
     private JButton BACKButton;
+    private JLabel detail_id;
+    private JLabel detail_date;
+    private JLabel detail_restaurant;
+    private JLabel detail_address;
+    private JLabel detail_NumberParticipants;
+    private JList voteDatesList;
+    private JButton CONFIRMButtonVote;
+    private JPanel votepane;
+    private JButton logOutButton;
     private LinkedList<Helper.Appointment> appointments = new LinkedList<Appointment>();
     private DefaultListModel<String> modelDatesCreateGroupPane = new DefaultListModel<>();
+    private DefaultListModel<String> modelDatesVotePane = new DefaultListModel<>();
     private DefaultListModel<String> modelMeetingsPerUser = new DefaultListModel<>();
 
     public Test(){
         //System.out.println(calculateCuisines(3));
-        System.out.println(calculateDates(4));
-        getRestaurant();
+        //System.out.println(calculateDates(4));
+
 
 
         listGroups.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -102,6 +118,8 @@ public class Test extends JFrame {
         mainPane.add(GROUPS_PAGE, GroupsPane);
         mainPane.add(CREATE_GROUP_PAGE, CreateGroupPane);
         mainPane.add(REGISTER_PAGE, RegisterPane);
+        mainPane.add(GROUP_DETAIL_PAGE,GroupsDetailPane);
+        mainPane.add(VOTE_DATE_PAGE,votepane);
         showLoginPane();
 
 
@@ -202,7 +220,9 @@ public class Test extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 String input = JOptionPane.showInputDialog(null,"Enter Group ID:", "Join Group", JOptionPane.PLAIN_MESSAGE);
                 if (input!=null){
+                    desiredGroup = Integer.parseInt(input);
                     joinGroup(PersonID,Integer.parseInt(input));
+                    showVoteDatePane(Integer.parseInt(input));
 
                 }
             }
@@ -263,6 +283,46 @@ public class Test extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 Group group = (Group)listGroups.getSelectedValue();
                 updateGroup(group.getID());
+                showGroupDetailsPane();
+
+
+
+            }
+        });
+        CONFIRMButtonVote.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                java.util.List dates = voteDatesList.getSelectedValuesList();
+                try {
+                    for (int i = 0; i < dates.size(); i++) {
+                        Date date = Date.valueOf(dates.get(i).toString());
+                        PreparedStatement pS = DatabaseConnection.getInstance().getConnection().prepareStatement(createAppointment);
+                        pS.setInt(1,PersonID);
+                        pS.setInt(2,desiredGroup);
+                        pS.setDate(3,date);
+                        pS.executeUpdate();
+                    }
+                }catch (SQLException a){
+                    a.printStackTrace();
+                }
+
+                showGroupsPane();
+                modelDatesVotePane.clear();
+            }
+        });
+        BACKButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showGroupsPane();
+            }
+        });
+        logOutButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                textField1.setText("");
+                passwordField1.setText("");
+                PersonID = -1;
+                showLoginPane();
             }
         });
     }
@@ -276,6 +336,7 @@ public class Test extends JFrame {
             preparedStatement.setInt(2, GroupID);
             preparedStatement.executeUpdate();
             System.out.println("Proceed with group ID: " + GroupID);
+
             showGroupsPane();
         } catch (SQLException a){
             a.printStackTrace();
@@ -310,8 +371,35 @@ public class Test extends JFrame {
 
     void updateGroup(int id){
         HashMap<Date,Integer> dates = calculateDates(id);
+        System.out.println("preferred Dates: " + calculateDates(id));
         HashMap<Integer,Integer> cuisines = calculateCuisines(id);
         int groupSize = getGroupSize(id);
+        Restaurant restaurant = getRestaurant(cuisines,getLongitude(id),getLatitude(id));
+        try{
+            PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(updateMeeting);
+            preparedStatement.setString(1,restaurant.getName());
+            preparedStatement.setString(2,restaurant.getAddress());
+            preparedStatement.setInt(3,id);
+            preparedStatement.executeUpdate();
+        } catch (SQLException a){
+            a.printStackTrace();
+        }
+
+        detail_id.setText("ID: "+id);
+        Map.Entry<Date,Integer> entry = dates.entrySet().iterator().next();
+        detail_date.setText("Date: "+entry.getKey().toString());
+        detail_restaurant.setText("Restaurant: "+restaurant.getName());
+        detail_address.setText("Address: "+restaurant.getAddress());
+        detail_NumberParticipants.setText("Participants: "+entry.getValue());
+
+
+        /*for (Map.Entry<Date,Integer> entry : dates.entrySet()){
+            Date currentDate = entry.getKey();
+            int currentCounter = entry.getValue();
+        }*/
+
+
+
 
 
     }
@@ -328,6 +416,7 @@ public class Test extends JFrame {
                 PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(cuisineName);
                 preparedStatement.setInt(1, currentID);
                 ResultSet resultSet = preparedStatement.executeQuery();
+                resultSet.next();
                 String name = resultSet.getString(1);
                 if (firstFlag){
                     cuisineString = name;
@@ -341,7 +430,9 @@ public class Test extends JFrame {
 
 
         try {
-            URL url = new URL(docuMenu);
+            //https://api.documenu.com/v2/restaurants/search/geo?lat=40.688072&lon=-73.997385&distance=99999&key=df1082ac3bfa0e339773ec134a339aef&cuisine=Italian
+            URL url = new URL(docuMenu+"lat=" + latitude + "&lon=" + longitude + "&distance=99999&key=df1082ac3bfa0e339773ec134a339aef&cuisine=" + cuisineString);
+            System.out.println(url);
 
 
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -412,6 +503,30 @@ public class Test extends JFrame {
 
     void showRegisterPane(){
         cLayout.show(mainPane,REGISTER_PAGE);
+    }
+
+    void showGroupDetailsPane(){
+        cLayout.show(mainPane,GROUP_DETAIL_PAGE);
+    }
+
+    void showVoteDatePane(int groupID) {
+
+        try {
+            PreparedStatement preparedStatement = DatabaseConnection.getInstance().getConnection().prepareStatement(distinctGroupDates);
+            preparedStatement.setInt(1, groupID);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                Date date = resultSet.getDate("date");
+                modelDatesVotePane.addElement(date.toString());
+
+            }
+            voteDatesList.setModel(modelDatesVotePane);
+
+        } catch (SQLException a) {
+            a.printStackTrace();
+        }
+        cLayout.show(mainPane, VOTE_DATE_PAGE);
     }
 
     public static void main(String[] args) {
@@ -496,6 +611,7 @@ public class Test extends JFrame {
             while (resultSet.next()){
                 int personID = resultSet.getInt("PersonID");
                 Date date = resultSet.getDate("date");
+                //B bSystem.out.println("date: " + date + " person: " + PersonID);
                 //if Date entry exists in Map...
                 if (hashMap.containsKey(date)){
                     //and the Person did not vote several times for the same date..
@@ -503,10 +619,13 @@ public class Test extends JFrame {
                         //add the Person to the date
                         hashMap.get(date).add(personID);
                     }
+                }else {
+                    //if date is not in map yet, create entry with user
+                    hashMap.put(date, new LinkedList<Integer>(Arrays.asList(personID)));
                 }
-                //if date is not in map yet, create entry with user
-                hashMap.put(date,new LinkedList<Integer>(Arrays.asList(personID)));
             }
+
+            System.out.println("Hashmap with Dates and UserID: " + hashMap);
 
             int highestMatching = -1;
             for (Map.Entry<Date,LinkedList> entry : hashMap.entrySet()){
