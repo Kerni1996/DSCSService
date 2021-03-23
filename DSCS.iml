@@ -11,5 +11,6 @@
     <orderEntry type="library" name="jcalendar-1.4" level="project" />
     <orderEntry type="library" name="httpclient-4.3.6" level="project" />
     <orderEntry type="library" name="json-20210307" level="project" />
+    <orderEntry type="library" name="org.jxmapviewer:jxmapviewer2:2.5" level="project" />
   </component>
 </module>

@@ -7,6 +7,11 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONObject;
+import org.jxmapviewer.JXMapViewer;
+import org.jxmapviewer.OSMTileFactoryInfo;
+import org.jxmapviewer.viewer.DefaultTileFactory;
+import org.jxmapviewer.viewer.GeoPosition;
+import org.jxmapviewer.viewer.TileFactoryInfo;
 
 import javax.swing.*;
 import java.awt.*;
@@ -95,6 +100,7 @@ public class Test extends JFrame {
     private JButton CONFIRMButtonVote;
     private JPanel votepane;
     private JButton logOutButton;
+    private JPanel mapPanel;
     private LinkedList<Helper.Appointment> appointments = new LinkedList<Appointment>();
     private DefaultListModel<String> modelDatesCreateGroupPane = new DefaultListModel<>();
     private DefaultListModel<String> modelDatesVotePane = new DefaultListModel<>();
@@ -327,6 +333,27 @@ public class Test extends JFrame {
         });
     }
 
+    private void addMap(double longitude, double latitude){
+        JXMapViewer mapViewer = new JXMapViewer();
+
+        // Create a TileFactoryInfo for OpenStreetMap
+        TileFactoryInfo info = new OSMTileFactoryInfo();
+        DefaultTileFactory tileFactory = new DefaultTileFactory(info);
+        mapViewer.setTileFactory(tileFactory);
+
+        // Use 8 threads in parallel to load the tiles
+        tileFactory.setThreadPoolSize(8);
+
+        // Set the focus
+        GeoPosition frankfurt = new GeoPosition(latitude, longitude);
+
+        mapViewer.setZoom(7);
+        mapViewer.setAddressLocation(frankfurt);
+        mapPanel.removeAll();
+        mapPanel.add(mapViewer);
+
+    }
+
 
     private void joinGroup(int PersonID, int GroupID){
         try {
@@ -449,7 +476,13 @@ public class Test extends JFrame {
             JSONObject obj = new JSONObject(content.toString());
             System.out.println(obj.getJSONArray("data").get(0));
             JSONObject t1 = new JSONObject(obj.getJSONArray("data").get(0).toString());
-            Restaurant restaurant = new Restaurant(t1.getString("restaurant_name"),t1.getJSONObject("address").getString("formatted"));
+            Restaurant restaurant = new Restaurant(t1.getString("restaurant_name"),t1.getJSONObject("address").getString("formatted"),t1.getJSONObject("geo").getDouble("lat"),t1.getJSONObject("geo").getDouble("lon"));
+            System.out.println("latitude: " + restaurant.getLatitude());
+            System.out.println("longitude: " + restaurant.getLongitude());
+
+            //updateMap
+            addMap(restaurant.getLongitude(), restaurant.getLatitude());
+
             return restaurant;
         }catch (IOException i){
             i.printStackTrace();
@@ -506,6 +539,7 @@ public class Test extends JFrame {
     }
 
     void showGroupDetailsPane(){
+
         cLayout.show(mainPane,GROUP_DETAIL_PAGE);
     }
 
