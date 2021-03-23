@@ -9,18 +9,23 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONObject;
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.OSMTileFactoryInfo;
+import org.jxmapviewer.VirtualEarthTileFactoryInfo;
+import org.jxmapviewer.cache.FileBasedLocalCache;
+import org.jxmapviewer.input.CenterMapListener;
+import org.jxmapviewer.input.PanKeyListener;
+import org.jxmapviewer.input.PanMouseInputListener;
+import org.jxmapviewer.input.ZoomMouseWheelListenerCenter;
 import org.jxmapviewer.viewer.DefaultTileFactory;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.TileFactoryInfo;
+import org.jxmapviewer.viewer.WaypointPainter;
 
 import javax.swing.*;
+import javax.swing.event.MouseInputListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.*;
@@ -111,6 +116,7 @@ public class Test extends JFrame {
         //System.out.println(calculateDates(4));
 
 
+        System.out.println("Classpath is " + System.getProperty("java.class.path"));
 
         listGroups.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         setTitle("Card Layout Demo");
@@ -334,7 +340,51 @@ public class Test extends JFrame {
     }
 
     private void addMap(double longitude, double latitude){
+        /**
+         * code from https://github.com/msteiger/jxmapviewer2
+         */
+        // Create a TileFactoryInfo for Virtual Earth
+        TileFactoryInfo info = new VirtualEarthTileFactoryInfo(VirtualEarthTileFactoryInfo.MAP);
+        DefaultTileFactory tileFactory = new DefaultTileFactory(info);
+
+        // Setup local file cache
+        File cacheDir = new File(System.getProperty("user.home") + File.separator + ".jxmapviewer2");
+        tileFactory.setLocalCache(new FileBasedLocalCache(cacheDir, false));
+
+        // Setup JXMapViewer
         JXMapViewer mapViewer = new JXMapViewer();
+        mapViewer.setTileFactory(tileFactory);
+
+        GeoPosition frankfurt = new GeoPosition(latitude,longitude);
+
+        // Set the focus
+        mapViewer.setZoom(10);
+        mapViewer.setAddressLocation(frankfurt);
+
+        // Add interactions
+        MouseInputListener mia = new PanMouseInputListener(mapViewer);
+        mapViewer.addMouseListener(mia);
+        mapViewer.addMouseMotionListener(mia);
+        mapViewer.addMouseListener(new CenterMapListener(mapViewer));
+        mapViewer.addMouseWheelListener(new ZoomMouseWheelListenerCenter(mapViewer));
+        mapViewer.addKeyListener(new PanKeyListener(mapViewer));
+
+        // Create waypoints from the geo-positions
+        Set<MyWaypoint> waypoints = new HashSet<MyWaypoint>(Arrays.asList(
+                new MyWaypoint("R", Color.ORANGE, frankfurt)));
+
+        // Create a waypoint painter that takes all the waypoints
+        WaypointPainter<MyWaypoint> waypointPainter = new WaypointPainter<MyWaypoint>();
+        waypointPainter.setWaypoints(waypoints);
+        waypointPainter.setRenderer(new FancyWaypointRenderer());
+
+        mapViewer.setOverlayPainter(waypointPainter);
+
+        mapPanel.removeAll();
+        mapPanel.add(mapViewer);
+
+
+        /*JXMapViewer mapViewer = new JXMapViewer();
 
         // Create a TileFactoryInfo for OpenStreetMap
         TileFactoryInfo info = new OSMTileFactoryInfo();
@@ -351,6 +401,7 @@ public class Test extends JFrame {
         mapViewer.setAddressLocation(frankfurt);
         mapPanel.removeAll();
         mapPanel.add(mapViewer);
+        */
 
     }
 
