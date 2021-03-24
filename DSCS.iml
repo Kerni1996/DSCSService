@@ -8,9 +8,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="mysql-connector-java-8.0.22" level="project" />
-    <orderEntry type="library" exported="" name="httpclient-4.3.6" level="project" />
-    <orderEntry type="library" exported="" name="json-20210307" level="project" />
-    <orderEntry type="library" exported="" name="jxmapviewer2-2.5" level="project" />
-    <orderEntry type="library" exported="" name="commons-logging-1.2" level="project" />
+    <orderEntry type="library" name="commons-logging:commons-logging:1.2" level="project" />
+    <orderEntry type="library" name="org.jxmapviewer:jxmapviewer2:2.5" level="project" />
+    <orderEntry type="library" name="org.json:json:20201115" level="project" />
   </component>
 </module>
